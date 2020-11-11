@@ -88,3 +88,19 @@ $ docker run -e CASSANDRA_SEEDS=10.x.x.x                  -- csv of cassandra se
     -e DYNAMIC_CONFIG_FILE_PATH=config/foo.yaml         -- Dynamic config file to be watched
     temporalio/server:<tag>
 ```
+
+# Accessing host machine
+Accessing host machine works differently on linux and windows/mac machines
+as of now.
+
+For linux we can configure "network_mode: host" that exposes
+host ports to localhost of the container.
+
+For windows/mac we can use address "host.docker.internal" that resolves to
+the host machine.
+
+These overrides are configured in docker-compose.darwin.yml and
+docker-compose.linux.yml respectively.
+
+### Additional reading
+* https://github.com/docker/for-linux/issues/264
