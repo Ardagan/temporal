@@ -7,6 +7,9 @@ scrape_configs:
     metrics_path: /metrics
     static_configs:
       - targets:
+          # Default temporal-server
           - 'localhost:8000'
-          - 'localhost:9091'
-#todo(migryz) these should be configured differently for mac/linux
+          - 'host.docker.internal:8000'
+          # Default hellow-world example
+          # - 'localhost:9091'
+          # - 'host.docker.internal:9091'
