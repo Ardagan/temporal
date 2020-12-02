@@ -1189,7 +1189,7 @@ var ScopeDefs = map[ServiceIdx]map[int]scopeDefinition{
 		HistoryClientRefreshWorkflowTasksScope:                {operation: "HistoryClientRefreshWorkflowTasksScope", tags: map[string]string{ServiceRoleTagName: HistoryRoleTagValue}},
 		MatchingClientPollWorkflowTaskQueueScope:              {operation: "MatchingClientPollWorkflowTaskQueue", tags: map[string]string{ServiceRoleTagName: MatchingRoleTagValue}},
 		MatchingClientPollActivityTaskQueueScope:              {operation: "MatchingClientPollActivityTaskQueue", tags: map[string]string{ServiceRoleTagName: MatchingRoleTagValue}},
-		MatchingClientAddActivityTaskScope:                    {operation: "MatchingClientAddActivityTask", tags: map[string]string{ServiceRoleTagName: MatchingRoleTagValue}},
+		MatchingClientAddActivityTaskScope:                    {operation: "MatchingClientAddActivityTask", tags: map[string]string{ServiceRoleTagName: MatchingRoleTagValue, namespace: unknownValue}},
 		MatchingClientAddWorkflowTaskScope:                    {operation: "MatchingClientAddWorkflowTask", tags: map[string]string{ServiceRoleTagName: MatchingRoleTagValue}},
 		MatchingClientQueryWorkflowScope:                      {operation: "MatchingClientQueryWorkflow", tags: map[string]string{ServiceRoleTagName: MatchingRoleTagValue}},
 		MatchingClientRespondQueryTaskCompletedScope:          {operation: "MatchingClientRespondQueryTaskCompleted", tags: map[string]string{ServiceRoleTagName: MatchingRoleTagValue}},
@@ -1352,8 +1352,8 @@ var ScopeDefs = map[ServiceIdx]map[int]scopeDefinition{
 		AdminResendReplicationTasksScope:           {operation: "ResendReplicationTasks"},
 
 		FrontendStartWorkflowExecutionScope:             {operation: "StartWorkflowExecution"},
-		FrontendPollWorkflowTaskQueueScope:              {operation: "PollWorkflowTaskQueue"},
-		FrontendPollActivityTaskQueueScope:              {operation: "PollActivityTaskQueue"},
+		FrontendPollWorkflowTaskQueueScope:              {operation: "FE___PollWorkflowTaskQueue"},
+		FrontendPollActivityTaskQueueScope:              {operation: "FE___PollActivityTaskQueue"},
 		FrontendRecordActivityTaskHeartbeatScope:        {operation: "RecordActivityTaskHeartbeat"},
 		FrontendRecordActivityTaskHeartbeatByIdScope:    {operation: "RecordActivityTaskHeartbeatById"},
 		FrontendRespondWorkflowTaskCompletedScope:       {operation: "RespondWorkflowTaskCompleted"},
@@ -1495,8 +1495,10 @@ var ScopeDefs = map[ServiceIdx]map[int]scopeDefinition{
 	},
 	// Matching Scope Names
 	Matching: {
-		MatchingPollWorkflowTaskQueueScope:     {operation: "PollWorkflowTaskQueue"},
-		MatchingPollActivityTaskQueueScope:     {operation: "PollActivityTaskQueue"},
+
+		// todomigryz: undo modified operation name
+		MatchingPollWorkflowTaskQueueScope:     {operation: "Matching___PollWorkflowTaskQueue"}, // tags: map[string]string{ServiceRoleTagName: MatchingRoleTagValue, namespace: unknownValue}},
+		MatchingPollActivityTaskQueueScope:     {operation: "Matching___PollActivityTaskQueue"}, // tags: map[string]string{ServiceRoleTagName: MatchingRoleTagValue, namespace: unknownValue}},
 		MatchingAddActivityTaskScope:           {operation: "AddActivityTask"},
 		MatchingAddWorkflowTaskScope:           {operation: "AddWorkflowTask"},
 		MatchingTaskQueueMgrScope:              {operation: "TaskQueueMgr"},

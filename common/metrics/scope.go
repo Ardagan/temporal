@@ -68,7 +68,11 @@ func (m *metricsScope) AddCounter(id int, delta int64) {
 	def := m.defs[id]
 	m.scope.Counter(def.metricName.String()).Inc(delta)
 	if !def.metricRollupName.Empty() {
-		m.rootScope.Counter(def.metricRollupName.String()).Inc(delta)
+		scope := m.rootScope
+		if m.isNamespaceTagged {
+			scope = scope.Tagged(map[string]string{namespace: namespaceAllValue})
+		}
+		scope.Counter(def.metricRollupName.String()).Inc(delta)
 	}
 }
 
@@ -76,7 +80,11 @@ func (m *metricsScope) UpdateGauge(id int, value float64) {
 	def := m.defs[id]
 	m.scope.Gauge(def.metricName.String()).Update(value)
 	if !def.metricRollupName.Empty() {
-		m.scope.Gauge(def.metricRollupName.String()).Update(value)
+		scope := m.rootScope
+		if m.isNamespaceTagged {
+			scope = scope.Tagged(map[string]string{namespace: namespaceAllValue})
+		}
+		scope.Gauge(def.metricRollupName.String()).Update(value)
 	}
 }
 
@@ -85,7 +93,11 @@ func (m *metricsScope) StartTimer(id int) Stopwatch {
 	timer := m.scope.Timer(def.metricName.String())
 	switch {
 	case !def.metricRollupName.Empty():
-		return NewStopwatch(timer, m.rootScope.Timer(def.metricRollupName.String()))
+		scope := m.rootScope
+		if m.isNamespaceTagged {
+			scope = scope.Tagged(map[string]string{namespace: namespaceAllValue})
+		}
+		return NewStopwatch(timer, scope.Timer(def.metricRollupName.String()))
 	case m.isNamespaceTagged:
 		timerAll := m.scope.Tagged(map[string]string{namespace: namespaceAllValue}).Timer(def.metricName.String())
 		return NewStopwatch(timer, timerAll)
@@ -99,7 +111,11 @@ func (m *metricsScope) RecordTimer(id int, d time.Duration) {
 	m.scope.Timer(def.metricName.String()).Record(d)
 	switch {
 	case !def.metricRollupName.Empty():
-		m.rootScope.Timer(def.metricRollupName.String()).Record(d)
+		scope := m.rootScope
+		if m.isNamespaceTagged {
+			scope = scope.Tagged(map[string]string{namespace: namespaceAllValue})
+		}
+		scope.Timer(def.metricRollupName.String()).Record(d)
 	case m.isNamespaceTagged:
 		m.scope.Tagged(map[string]string{namespace: namespaceAllValue}).Timer(def.metricName.String()).Record(d)
 	}
@@ -109,7 +125,11 @@ func (m *metricsScope) RecordHistogramDuration(id int, value time.Duration) {
 	def := m.defs[id]
 	m.scope.Histogram(def.metricName.String(), m.getBuckets(id)).RecordDuration(value)
 	if !def.metricRollupName.Empty() {
-		m.rootScope.Histogram(def.metricRollupName.String(), m.getBuckets(id)).RecordDuration(value)
+		scope := m.rootScope
+		if m.isNamespaceTagged {
+			scope = scope.Tagged(map[string]string{namespace: namespaceAllValue})
+		}
+		scope.Histogram(def.metricRollupName.String(), m.getBuckets(id)).RecordDuration(value)
 	}
 }
 
@@ -117,7 +137,11 @@ func (m *metricsScope) RecordHistogramValue(id int, value float64) {
 	def := m.defs[id]
 	m.scope.Histogram(def.metricName.String(), m.getBuckets(id)).RecordValue(value)
 	if !def.metricRollupName.Empty() {
-		m.rootScope.Histogram(def.metricRollupName.String(), m.getBuckets(id)).RecordValue(value)
+		scope := m.rootScope
+		if m.isNamespaceTagged {
+			scope = scope.Tagged(map[string]string{namespace: namespaceAllValue})
+		}
+		scope.Histogram(def.metricRollupName.String(), m.getBuckets(id)).RecordValue(value)
 	}
 }
 

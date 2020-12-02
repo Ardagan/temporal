@@ -645,8 +645,12 @@ func (h *Handler) StartWorkflowExecution(ctx context.Context, request *historyse
 	h.startWG.Wait()
 
 	scope := metrics.HistoryStartWorkflowExecutionScope
-	h.GetMetricsClient().IncCounter(scope, metrics.ServiceRequests)
-	sw := h.GetMetricsClient().StartTimer(scope, metrics.ServiceLatency)
+
+	// todomigryz: servicerequests/serviceLatency misses namespace [patched]
+	//h.GetMetricsClient().IncCounter(scope, metrics.ServiceRequests)
+	metricsScope := h.newMetricsScope()
+	metricsScope.IncCounter(metrics.ServiceRequests)
+	sw := metricsScope.StartTimer(metrics.ServiceLatency)
 	defer sw.Stop()
 
 	namespaceID := request.GetNamespaceId()
@@ -1267,9 +1271,12 @@ func (h *Handler) ResetStickyTaskQueue(ctx context.Context, request *historyserv
 	defer log.CapturePanic(h.GetLogger(), &retError)
 	h.startWG.Wait()
 
-	scope := metrics.HistoryResetStickyTaskQueueScope
-	h.GetMetricsClient().IncCounter(scope, metrics.ServiceRequests)
-	sw := h.GetMetricsClient().StartTimer(scope, metrics.ServiceLatency)
+	scopeId := metrics.HistoryResetStickyTaskQueueScope
+	h.GetMetricsClient().IncCounter(scopeId, metrics.ServiceRequests)
+
+	namespaceName, _ := h.GetNamespaceCache().GetNamespaceByID(request.GetNamespaceId())
+	scopeInst := h.GetMetricsClient().Scope(scopeId, metrics.NamespaceTag(namespaceName.GetInfo().Name))
+	sw := scopeInst.StartTimer(metrics.ServiceLatency)
 	defer sw.Stop()
 
 	if h.isShuttingDown() {
@@ -1278,22 +1285,22 @@ func (h *Handler) ResetStickyTaskQueue(ctx context.Context, request *historyserv
 
 	namespaceID := request.GetNamespaceId()
 	if namespaceID == "" {
-		return nil, h.error(errNamespaceNotSet, scope, namespaceID, "")
+		return nil, h.error(errNamespaceNotSet, scopeId, namespaceID, "")
 	}
 
 	if ok := h.rateLimiter.Allow(); !ok {
-		return nil, h.error(errHistoryHostThrottle, scope, namespaceID, "")
+		return nil, h.error(errHistoryHostThrottle, scopeId, namespaceID, "")
 	}
 
 	workflowID := request.Execution.GetWorkflowId()
 	engine, err := h.controller.GetEngine(namespaceID, workflowID)
 	if err != nil {
-		return nil, h.error(err, scope, namespaceID, workflowID)
+		return nil, h.error(err, scopeId, namespaceID, workflowID)
 	}
 
 	resp, err := engine.ResetStickyTaskQueue(ctx, request)
 	if err != nil {
-		return nil, h.error(err, scope, namespaceID, workflowID)
+		return nil, h.error(err, scopeId, namespaceID, workflowID)
 	}
 
 	return resp, nil
@@ -1606,9 +1613,12 @@ func (h *Handler) GetDLQMessages(ctx context.Context, request *historyservice.Ge
 
 	h.startWG.Wait()
 
+	// TODO(migryz): use metrics.Scope
 	scope := metrics.HistoryReadDLQMessagesScope
 	h.GetMetricsClient().IncCounter(scope, metrics.ServiceRequests)
-	sw := h.GetMetricsClient().StartTimer(scope, metrics.ServiceLatency)
+
+	metricsScope := h.newMetricsScope()
+	sw := metricsScope.StartTimer(metrics.ServiceLatency)
 	defer sw.Stop()
 
 	if h.isShuttingDown() {
@@ -1831,4 +1841,8 @@ func validateTaskToken(taskToken *tokenspb.Task) error {
 		return errWorkflowIDNotSet
 	}
 	return nil
+}
+
+func (h *Handler) newMetricsScope() metrics.Scope {
+	return h.GetMetricsClient().Scope(metrics.HistoryReadDLQMessagesScope).Tagged(metrics.NamespaceUnknownTag())
 }

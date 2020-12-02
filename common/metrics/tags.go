@@ -82,6 +82,10 @@ type (
 	commandTypeTag struct {
 		value string
 	}
+
+	serviceRoleTag struct {
+		value string
+	}
 )
 
 // NamespaceTag returns a new namespace tag. For timers, this also ensures that we
@@ -236,5 +240,23 @@ func (d commandTypeTag) Key() string {
 
 // Value returns the value of the command type tag
 func (d commandTypeTag) Value() string {
+	return d.value
+}
+
+// ServiceRoleTag returns a new namespace tag.
+func ServiceRoleTag(value string) Tag {
+	if len(value) == 0 {
+		value = unknownValue
+	}
+	return serviceRoleTag{value}
+}
+
+// Key returns the key of the namespace tag
+func (d serviceRoleTag) Key() string {
+	return ServiceRoleTagName
+}
+
+// Value returns the value of a namespace tag
+func (d serviceRoleTag) Value() string {
 	return d.value
 }

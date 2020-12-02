@@ -427,7 +427,8 @@ func (adh *AdminHandler) GetWorkflowExecutionRawHistoryV2(ctx context.Context, r
 	// N.B. - Dual emit is required here so that we can see aggregate timer stats across all
 	// namespaces along with the individual namespaces stats
 	adh.GetMetricsClient().RecordTimer(metrics.AdminGetWorkflowExecutionRawHistoryScope, metrics.HistorySize, time.Duration(size))
-	scope.RecordTimer(metrics.HistorySize, time.Duration(size))
+	// todomigryz: use namespaceAllValue
+	scope.Tagged(metrics.NamespaceTag("all")).RecordTimer(metrics.HistorySize, time.Duration(size))
 
 	result := &adminservice.GetWorkflowExecutionRawHistoryV2Response{
 		HistoryBatches: rawHistoryResponse.HistoryEventBlobs,

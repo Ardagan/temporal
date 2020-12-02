@@ -222,6 +222,8 @@ func (h *Handler) PollActivityTaskQueue(
 	defer sw.Stop()
 
 	if request.GetForwardedSource() != "" {
+		// todomigryz: root_scope misses service_role tag tags
+		// Tagged(metrics.ServiceRoleTag(metrics.MatchingRoleTagValue))
 		hCtx.scope.IncCounter(metrics.ForwardedPerTaskQueueCounter)
 	}
 
@@ -258,6 +260,7 @@ func (h *Handler) PollWorkflowTaskQueue(
 	defer sw.Stop()
 
 	if request.GetForwardedSource() != "" {
+		// todomigryz: root scope misses service_role tag
 		hCtx.scope.IncCounter(metrics.ForwardedPerTaskQueueCounter)
 	}
 

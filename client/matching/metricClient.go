@@ -103,10 +103,14 @@ func (c *metricClient) PollActivityTaskQueue(
 	request *matchingservice.PollActivityTaskQueueRequest,
 	opts ...grpc.CallOption) (*matchingservice.PollActivityTaskQueueResponse, error) {
 
+	// TODO(migryz): add namespace
+	//scope := c.metricsClient.Scope(metrics.MatchingClientPollActivityTaskQueueScope).Tagged(metrics.NamespaceUnknownTag())
+	//scope.IncCounter(metrics.ClientRequests)
 	c.metricsClient.IncCounter(metrics.MatchingClientPollActivityTaskQueueScope, metrics.ClientRequests)
 	sw := c.metricsClient.StartTimer(metrics.MatchingClientPollActivityTaskQueueScope, metrics.ClientLatency)
 
 	if request.PollRequest != nil {
+		// TODO(migryz): this emits counter with tags [operation service_role]
 		c.emitForwardedSourceStats(
 			metrics.MatchingClientPollActivityTaskQueueScope,
 			request.GetForwardedSource(),
@@ -250,11 +254,13 @@ func (c *metricClient) emitForwardedSourceStats(scope int, forwardedFrom string,
 	if taskQueue == nil {
 		return
 	}
-	isChildPartition := strings.HasPrefix(taskQueue.GetName(), taskQueuePartitionPrefix)
 	switch {
 	case forwardedFrom != "":
-		c.metricsClient.IncCounter(scope, metrics.MatchingClientForwardedCounter)
+		// todomigryz: misses namespace tag
+		c.metricsClient.Scope(scope, metrics.NamespaceUnknownTag()).IncCounter(metrics.MatchingClientForwardedCounter)
+		//c.metricsClient.IncCounter(scope, metrics.MatchingClientForwardedCounter)
 	default:
+		isChildPartition := strings.HasPrefix(taskQueue.GetName(), taskQueuePartitionPrefix)
 		if isChildPartition {
 			c.metricsClient.IncCounter(scope, metrics.MatchingClientInvalidTaskQueueName)
 		}
