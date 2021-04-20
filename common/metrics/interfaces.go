@@ -38,7 +38,10 @@ type (
 	// Stop() method to report time elapsed since its created back to the
 	// timer or histogram.
 	Stopwatch interface {
+		// Stop records time elapsed from time of creation.
 		Stop()
+		// Substract adds value to substract from recorded duration.
+		Substract(nsec time.Duration)
 	}
 
 	// Client is the interface used to report metrics tally.

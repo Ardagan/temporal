@@ -71,6 +71,18 @@ func (mr *MockStopwatchMockRecorder) Stop() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockStopwatch)(nil).Stop))
 }
 
+// Substract mocks base method.
+func (m *MockStopwatch) Substract(nsec time.Duration) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Substract", nsec)
+}
+
+// Substract indicates an expected call of Substract.
+func (mr *MockStopwatchMockRecorder) Substract(nsec interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Substract", reflect.TypeOf((*MockStopwatch)(nil).Substract), nsec)
+}
+
 // MockClient is a mock of Client interface.
 type MockClient struct {
 	ctrl     *gomock.Controller
