@@ -67,7 +67,8 @@ func (s *grpcSuite) TestMetadataMetricInjection() {
 
 	smcii := NewServerMetricsContextInjectorInterceptor()
 	s.NotNil(smcii)
-	res, err := smcii( ctx, nil, nil,
+	res, err := smcii(
+		ctx, nil, nil,
 		func(ctx context.Context, req interface{}) (interface{}, error) {
 			res, err := NewServerMetricsTrailerPropagatorInterceptor(logger)(
 				ctx, req, nil,

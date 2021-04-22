@@ -79,18 +79,17 @@ func NewClientMetricsTrailerPropagatorInterceptor(logger log.Logger) grpc.UnaryC
 // NewServerMetricsContextInjectorInterceptor returns grpc server interceptor that wraps golang context into golang
 // metrics propagation context.
 func NewServerMetricsContextInjectorInterceptor() grpc.UnaryServerInterceptor {
-	return func (
+	return func(
 		ctx context.Context,
 		req interface{},
-	info *grpc.UnaryServerInfo,
-	handler grpc.UnaryHandler,
+		info *grpc.UnaryServerInfo,
+		handler grpc.UnaryHandler,
 	) (interface{}, error) {
-	metricValues := &metrics.MetricPropagationContext{CountersInt: make(map[string]int64)}
-	ctxWithMetricValues := context.WithValue(ctx, metricsContextMdInst, metricValues)
-	return handler(ctxWithMetricValues, req)
+		metricValues := &metrics.MetricPropagationContext{CountersInt: make(map[string]int64)}
+		ctxWithMetricValues := context.WithValue(ctx, metricsContextMdInst, metricValues)
+		return handler(ctxWithMetricValues, req)
 	}
 }
-
 
 // NewServerMetricsTrailerPropagatorInterceptor returns grpc server interceptor that injects metrics propagation context
 // into grpc trailer.
