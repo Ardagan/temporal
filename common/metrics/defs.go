@@ -74,7 +74,7 @@ const (
 
 // Values used for metrics propagation
 const (
-	HistoryCacheGetOrCreateLatency = "history_cache_get_or_create_latency"
+	HistoryWorkflowExecutionCacheLatency = "history_workflow_execution_cache_latency"
 )
 
 // Common tags for all services

@@ -117,7 +117,7 @@ func (ti *TelemetryInterceptor) Intercept(
 
 	propagationContext := metrics.GetPropagationContextFromGoContext(ctx)
 	if propagationContext != nil {
-		if val, ok := propagationContext.CountersInt[metrics.HistoryCacheGetOrCreateLatency]; ok {
+		if val, ok := propagationContext.CountersInt[metrics.HistoryWorkflowExecutionCacheLatency]; ok {
 			timerNoUser.Substract(time.Duration(val))
 		}
 	}

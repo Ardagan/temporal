@@ -184,7 +184,7 @@ func (c *historyCache) getOrCreateWorkflowExecution(
 		false,
 	)
 
-	metrics.ContextCounterAdd(ctx, c.logger, metrics.HistoryCacheGetOrCreateLatency, time.Since(start).Nanoseconds())
+	metrics.ContextCounterAdd(ctx, c.logger, metrics.HistoryWorkflowExecutionCacheLatency, time.Since(start).Nanoseconds())
 
 	return weCtx, weReleaseFunc, err
 }
