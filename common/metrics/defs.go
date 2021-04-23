@@ -74,7 +74,7 @@ const (
 
 // Values used for metrics propagation
 const (
-	UserInducedLatency = "user_induced_latency"
+	HistoryCacheGetOrCreateLatency = "history_cache_get_or_create_latency"
 )
 
 // Common tags for all services
