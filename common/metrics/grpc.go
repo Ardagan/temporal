@@ -35,11 +35,11 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-type metricsContextKey struct {}
+type metricsContextKey struct{}
 
 var (
 	baggageTrailerKey = "metrics-baggage-bin"
-	metricsCtxKey = metricsContextKey{}
+	metricsCtxKey     = metricsContextKey{}
 )
 
 // NewServerMetricsContextInjectorInterceptor returns grpc server interceptor that wraps golang context into golang

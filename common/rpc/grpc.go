@@ -71,7 +71,7 @@ func Dial(hostName string, tlsConfig *tls.Config, logger log.Logger) (*grpc.Clie
 	// https://github.com/grpc/grpc/blob/master/doc/connection-backoff.md.
 	// Default MaxDelay is 120 seconds which is too high.
 	var cp = grpc.ConnectParams{
-		Backoff: backoff.DefaultConfig,
+		Backoff:           backoff.DefaultConfig,
 		MinConnectTimeout: minConnectTimeout,
 	}
 	cp.Backoff.MaxDelay = MaxBackoffDelay
