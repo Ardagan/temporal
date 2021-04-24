@@ -110,15 +110,15 @@ func (ti *TelemetryInterceptor) Intercept(
 
 	timer := metricsScope.StartTimer(metrics.ServiceLatency)
 	defer timer.Stop()
-	timerNoUser := metricsScope.StartTimer(metrics.ServiceLatencyNoUser)
-	defer timerNoUser.Stop()
+	timerNoUserLatency := metricsScope.StartTimer(metrics.ServiceLatencyNoUserLatency)
+	defer timerNoUserLatency.Stop()
 
 	resp, err := handler(ctx, req)
 
-	propagationContext := metrics.GetPropagationContextFromGoContext(ctx)
-	if propagationContext != nil {
-		if val, ok := propagationContext.CountersInt[metrics.HistoryWorkflowExecutionCacheLatency]; ok {
-			timerNoUser.Substract(time.Duration(val))
+	metricsBaggage := metrics.GetMetricsBaggageFromContext(ctx)
+	if metricsBaggage != nil {
+		if val, ok := metricsBaggage.CountersInt[metrics.HistoryWorkflowExecutionCacheLatency]; ok {
+			timerNoUserLatency.Substract(time.Duration(val))
 		}
 	}
 

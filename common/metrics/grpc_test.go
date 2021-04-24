@@ -89,7 +89,7 @@ func (s *grpcSuite) TestMetadataMetricInjection() {
 								s.Fail("failed ot marshal values")
 							}
 							*trailer.TrailerAddr = metadata.MD{}
-							trailer.TrailerAddr.Append(metricsContextMd.trailerID, string(data))
+							trailer.TrailerAddr.Append(baggageTrailerKey, string(data))
 							return nil
 						},
 					)
@@ -99,7 +99,7 @@ func (s *grpcSuite) TestMetadataMetricInjection() {
 
 			s.Nil(err)
 			s.Equal(len(ssts.trailers), 1)
-			propagationContextBlobs := ssts.trailers[0].Get(metricsContextMd.trailerID)
+			propagationContextBlobs := ssts.trailers[0].Get(baggageTrailerKey)
 			s.NotNil(propagationContextBlobs)
 			s.Equal(1, len(propagationContextBlobs))
 			deserializedPropagationContext := &metricspb.Baggage{}
@@ -113,6 +113,21 @@ func (s *grpcSuite) TestMetadataMetricInjection() {
 	s.Nil(err)
 	s.Equal(10, res)
 	s.Assert()
+}
+
+func (s *grpcSuite) TestContextCounterAdd() {
+	logger := log.NewMockLogger(s.controller)
+	ctx := AddMetricsBaggageToContext(context.Background())
+
+	testCounterName := "test_counter"
+	ContextCounterAdd(ctx, logger, testCounterName, 100)
+	ContextCounterAdd(ctx, logger, testCounterName, 20)
+	ContextCounterAdd(ctx, logger, testCounterName, 3)
+
+	metricsBaggage := GetMetricsBaggageFromContext(ctx)
+	value, ok := metricsBaggage.CountersInt[testCounterName]
+	s.True(ok)
+	s.Equal(123, value)
 }
 
 func newMockServerTransportStream() *mockServerTransportStream {

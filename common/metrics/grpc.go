@@ -35,46 +35,12 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-type metricsContextMetadata struct {
-	trailerID string
-}
+type metricsContextKey struct {}
 
 var (
-	metricsContextMd = metricsContextMetadata{trailerID: "metrics-context-bin"}
+	baggageTrailerKey = "metrics-baggage-bin"
+	metricsCtxKey = metricsContextKey{}
 )
-
-// NewClientMetricsTrailerPropagatorInterceptor returns grpc client interceptor that injects metrics propagation context
-// received in trailer into golang metrics propagation context.
-func NewClientMetricsTrailerPropagatorInterceptor(logger log.Logger) grpc.UnaryClientInterceptor {
-	return func(
-		ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker,
-		opts ...grpc.CallOption,
-	) error {
-		var md metadata.MD
-		optsWithTrailer := append(opts, grpc.Trailer(&md))
-		err := invoker(ctx, method, req, reply, cc, optsWithTrailer...)
-
-		metricUpdates := md.Get(metricsContextMd.trailerID)
-		if metricUpdates == nil {
-			return err
-		}
-
-		for _, str := range metricUpdates {
-			data := []byte(str)
-			propagationContext := metricspb.Baggage{}
-			unmarshalError := propagationContext.Unmarshal(data)
-			if unmarshalError != nil {
-				logger.Error("unable to unmarshal metrics propagation data from trailer", tag.Error(unmarshalError))
-				continue
-			}
-			for key, value := range propagationContext.CountersInt {
-				ContextCounterAdd(ctx, logger, key, value)
-			}
-		}
-
-		return err
-	}
-}
 
 // NewServerMetricsContextInjectorInterceptor returns grpc server interceptor that wraps golang context into golang
 // metrics propagation context.
@@ -85,9 +51,41 @@ func NewServerMetricsContextInjectorInterceptor() grpc.UnaryServerInterceptor {
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (interface{}, error) {
-		metricValues := &metricspb.Baggage{CountersInt: make(map[string]int64)}
-		ctxWithMetricValues := context.WithValue(ctx, metricsContextMd, metricValues)
-		return handler(ctxWithMetricValues, req)
+		ctxWithMetricsBaggage := AddMetricsBaggageToContext(ctx)
+		return handler(ctxWithMetricsBaggage, req)
+	}
+}
+
+// NewClientMetricsTrailerPropagatorInterceptor returns grpc client interceptor that injects metrics propagation context
+// received in trailer into golang metrics propagation context.
+func NewClientMetricsTrailerPropagatorInterceptor(logger log.Logger) grpc.UnaryClientInterceptor {
+	return func(
+		ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker,
+		opts ...grpc.CallOption,
+	) error {
+		var trailer metadata.MD
+		optsWithTrailer := append(opts, grpc.Trailer(&trailer))
+		err := invoker(ctx, method, req, reply, cc, optsWithTrailer...)
+
+		metricsBaggageStrings := trailer.Get(baggageTrailerKey)
+		if metricsBaggageStrings == nil {
+			return err
+		}
+
+		for _, str := range metricsBaggageStrings {
+			data := []byte(str)
+			metricsBaggage := &metricspb.Baggage{}
+			unmarshalErr := metricsBaggage.Unmarshal(data)
+			if unmarshalErr != nil {
+				logger.Error("unable to unmarshal metrics baggage from trailer", tag.Error(unmarshalErr))
+				continue
+			}
+			for key, value := range metricsBaggage.CountersInt {
+				ContextCounterAdd(ctx, logger, key, value)
+			}
+		}
+
+		return err
 	}
 }
 
@@ -100,32 +98,32 @@ func NewServerMetricsTrailerPropagatorInterceptor(logger log.Logger) grpc.UnaryS
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (interface{}, error) {
-		// we want to return original handler responce, so don't override err
+		// we want to return original handler response, so don't override err
 		resp, err := handler(ctx, req)
 
-		propagationContext := GetPropagationContextFromGoContext(ctx)
-		if propagationContext == nil {
+		baggage := GetMetricsBaggageFromContext(ctx)
+		if baggage == nil {
 			return resp, err
 		}
 
-		bytes, error := propagationContext.Marshal()
-		if error != nil {
-			logger.Error("unable to marshal metricValues", tag.Error(error))
+		bytes, marshalErr := baggage.Marshal()
+		if marshalErr != nil {
+			logger.Error("unable to marshal metric baggage", tag.Error(marshalErr))
 		}
 
-		md := metadata.Pairs(metricsContextMd.trailerID, string(bytes))
-		error = grpc.SetTrailer(ctx, md)
-		if error != nil {
-			logger.Error("unable to set metrics propagation context gRPC trailer", tag.Error(error))
+		md := metadata.Pairs(baggageTrailerKey, string(bytes))
+		marshalErr = grpc.SetTrailer(ctx, md)
+		if marshalErr != nil {
+			logger.Error("unable to add metrics baggage to gRPC trailer", tag.Error(marshalErr))
 		}
 
 		return resp, err
 	}
 }
 
-// GetPropagationContextFromGoContext extracts propagation context from go context.
-func GetPropagationContextFromGoContext(ctx context.Context) *metricspb.Baggage {
-	metricValues := ctx.Value(metricsContextMd)
+// GetMetricsBaggageFromContext extracts propagation context from go context.
+func GetMetricsBaggageFromContext(ctx context.Context) *metricspb.Baggage {
+	metricValues := ctx.Value(metricsCtxKey)
 	if metricValues == nil {
 		return nil
 	}
@@ -138,16 +136,21 @@ func GetPropagationContextFromGoContext(ctx context.Context) *metricspb.Baggage 
 
 }
 
+func AddMetricsBaggageToContext(ctx context.Context) context.Context {
+	metricsBaggage := &metricspb.Baggage{CountersInt: make(map[string]int64)}
+	return context.WithValue(ctx, metricsCtxKey, metricsBaggage)
+}
+
 // ContextCounterAdd adds value to counter within propagation context.
 func ContextCounterAdd(ctx context.Context, logger log.Logger, name string, value int64) {
-	propagationContext := GetPropagationContextFromGoContext(ctx)
-	if propagationContext == nil {
-		logger.Error("unable to fetch metricsPropagationContext from context")
+	metricsBaggage := GetMetricsBaggageFromContext(ctx)
+
+	if metricsBaggage == nil {
+		logger.Error("unable to fetch metrics baggage from context")
 		return
 	}
-	if metricValue, ok := propagationContext.CountersInt[name]; ok {
-		metricValue += value
-	} else {
-		propagationContext.CountersInt[name] = value
-	}
+
+	metricValue, _ := metricsBaggage.CountersInt[name]
+	metricValue += value
+	metricsBaggage.CountersInt[name] = metricValue
 }
