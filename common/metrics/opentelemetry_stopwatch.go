@@ -91,4 +91,3 @@ func (o *opentelemetryStopwatch) Substract(toSubstract time.Duration) {
 func (om *openTelemetryStopwatchMetricImpl) Record(ctx context.Context, d time.Duration) {
 	om.timer.Record(ctx, float64(d.Nanoseconds()), om.labels...)
 }
-
