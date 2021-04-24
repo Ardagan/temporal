@@ -23,6 +23,6 @@ package temporal.server.api.metrics.v1;
 
 option go_package = "go.temporal.io/server/api/metrics/v1;metrics";
 
-message MetricPropagationContext {
+message Baggage {
 	map<string, int64> counters_int = 1;
 }

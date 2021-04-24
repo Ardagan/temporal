@@ -34,7 +34,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"go.temporal.io/server/api/metrics/v1"
+	metricspb "go.temporal.io/server/api/metrics/v1"
 	"go.temporal.io/server/common/log"
 )
 
@@ -82,14 +82,14 @@ func (s *grpcSuite) TestMetadataMetricInjection() {
 							opts ...grpc.CallOption,
 						) error {
 							trailer := opts[0].(grpc.TrailerCallOption)
-							propagationContext := &metrics.MetricPropagationContext{CountersInt: make(map[string]int64)}
+							propagationContext := &metricspb.Baggage{CountersInt: make(map[string]int64)}
 							propagationContext.CountersInt[anyMetricName] = 1234
 							data, err := propagationContext.Marshal()
 							if err != nil {
 								s.Fail("failed ot marshal values")
 							}
 							*trailer.TrailerAddr = metadata.MD{}
-							trailer.TrailerAddr.Append(metricsContextMdInst.trailerID, string(data))
+							trailer.TrailerAddr.Append(metricsContextMd.trailerID, string(data))
 							return nil
 						},
 					)
@@ -99,10 +99,10 @@ func (s *grpcSuite) TestMetadataMetricInjection() {
 
 			s.Nil(err)
 			s.Equal(len(ssts.trailers), 1)
-			propagationContextBlobs := ssts.trailers[0].Get(metricsContextMdInst.trailerID)
+			propagationContextBlobs := ssts.trailers[0].Get(metricsContextMd.trailerID)
 			s.NotNil(propagationContextBlobs)
 			s.Equal(1, len(propagationContextBlobs))
-			deserializedPropagationContext := &metrics.MetricPropagationContext{}
+			deserializedPropagationContext := &metricspb.Baggage{}
 			err = deserializedPropagationContext.Unmarshal(([]byte)(propagationContextBlobs[0]))
 			s.Nil(err)
 			s.Equal(int64(1234), deserializedPropagationContext.CountersInt[anyMetricName])

@@ -27,7 +27,7 @@ package metrics
 import (
 	"context"
 
-	"go.temporal.io/server/api/metrics/v1"
+	metricspb "go.temporal.io/server/api/metrics/v1"
 	"go.temporal.io/server/common/log"
 	"go.temporal.io/server/common/log/tag"
 
@@ -35,12 +35,12 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-type metricsContextMd struct {
+type metricsContextMetadata struct {
 	trailerID string
 }
 
 var (
-	metricsContextMdInst = metricsContextMd{trailerID: "metrics_context_md-bin"}
+	metricsContextMd = metricsContextMetadata{trailerID: "metrics-context-bin"}
 )
 
 // NewClientMetricsTrailerPropagatorInterceptor returns grpc client interceptor that injects metrics propagation context
@@ -54,17 +54,17 @@ func NewClientMetricsTrailerPropagatorInterceptor(logger log.Logger) grpc.UnaryC
 		optsNew := append(opts, grpc.Trailer(&md))
 		err := invoker(ctx, method, req, reply, cc, optsNew...)
 
-		metricUpdates := md.Get(metricsContextMdInst.trailerID)
+		metricUpdates := md.Get(metricsContextMd.trailerID)
 		if metricUpdates == nil {
 			return err
 		}
 
 		for _, str := range metricUpdates {
-			data := ([]byte)(str)
-			propagationContext := metrics.MetricPropagationContext{}
-			error := propagationContext.Unmarshal(data)
-			if error != nil {
-				logger.Error("unable to unmarshal metrics propagation data from trailer", tag.Error(error))
+			data := []byte(str)
+			propagationContext := metricspb.Baggage{}
+			unmarshalError := propagationContext.Unmarshal(data)
+			if unmarshalError != nil {
+				logger.Error("unable to unmarshal metrics propagation data from trailer", tag.Error(unmarshalError))
 				continue
 			}
 			for key, value := range propagationContext.CountersInt {
@@ -85,14 +85,14 @@ func NewServerMetricsContextInjectorInterceptor() grpc.UnaryServerInterceptor {
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (interface{}, error) {
-		metricValues := &metrics.MetricPropagationContext{CountersInt: make(map[string]int64)}
-		ctxWithMetricValues := context.WithValue(ctx, metricsContextMdInst, metricValues)
+		metricValues := &metricspb.Baggage{CountersInt: make(map[string]int64)}
+		ctxWithMetricValues := context.WithValue(ctx, metricsContextMd, metricValues)
 		return handler(ctxWithMetricValues, req)
 	}
 }
 
 // NewServerMetricsTrailerPropagatorInterceptor returns grpc server interceptor that injects metrics propagation context
-// into grpc trailer.
+// into gRPC trailer.
 func NewServerMetricsTrailerPropagatorInterceptor(logger log.Logger) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
@@ -113,10 +113,10 @@ func NewServerMetricsTrailerPropagatorInterceptor(logger log.Logger) grpc.UnaryS
 			logger.Error("unable to marshal metricValues", tag.Error(error))
 		}
 
-		md := metadata.Pairs(metricsContextMdInst.trailerID, string(bytes))
+		md := metadata.Pairs(metricsContextMd.trailerID, string(bytes))
 		error = grpc.SetTrailer(ctx, md)
 		if error != nil {
-			logger.Error("unable to set metrics propagation context grpc trailer", tag.Error(error))
+			logger.Error("unable to set metrics propagation context gRPC trailer", tag.Error(error))
 		}
 
 		return resp, err
@@ -124,17 +124,17 @@ func NewServerMetricsTrailerPropagatorInterceptor(logger log.Logger) grpc.UnaryS
 }
 
 // GetPropagationContextFromGoContext extracts propagation context from go context.
-func GetPropagationContextFromGoContext(ctx context.Context) *metrics.MetricPropagationContext {
-	metricValues := ctx.Value(metricsContextMdInst)
+func GetPropagationContextFromGoContext(ctx context.Context) *metricspb.Baggage {
+	metricValues := ctx.Value(metricsContextMd)
 	if metricValues == nil {
 		return nil
 	}
 
-	metricValuesMap, ok := metricValues.(*metrics.MetricPropagationContext)
+	metricValuesCtx, ok := metricValues.(*metricspb.Baggage)
 	if !ok {
 		return nil
 	}
-	return metricValuesMap
+	return metricValuesCtx
 
 }
 

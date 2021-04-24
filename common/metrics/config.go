@@ -205,7 +205,7 @@ func (c *Config) InitMetricReporters(logger log.Logger, customReporter interface
 		} else {
 			return nil, nil, fmt.Errorf(
 				"specified customReporter is not of expected type tally.BaseStatsReporter "+
-					"as expected for metrics framework \"%s\"", FrameworkTally,
+					"as expected for metrics framework %q", FrameworkTally,
 			)
 		}
 	} else {
@@ -240,7 +240,7 @@ func (c *Config) initReporterFromPrometheusConfig(logger log.Logger, config *Pro
 	case FrameworkOpentelemetry:
 		return newOpentelemeteryReporter(logger, c.Tags, c.Prefix, config)
 	default:
-		err := fmt.Errorf("unsupported framework type specified in config: %s", config.Framework)
+		err := fmt.Errorf("unsupported framework type specified in config: %q", config.Framework)
 		logger.Error(err.Error())
 		return nil, err
 	}

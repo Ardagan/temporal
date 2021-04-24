@@ -71,7 +71,7 @@ func Dial(hostName string, tlsConfig *tls.Config, logger log.Logger) (*grpc.Clie
 	// https://github.com/grpc/grpc/blob/master/doc/connection-backoff.md.
 	// Default MaxDelay is 120 seconds which is too high.
 	var cp = grpc.ConnectParams{
-		Backoff:           backoff.DefaultConfig,
+		Backoff: backoff.DefaultConfig,
 		MinConnectTimeout: minConnectTimeout,
 	}
 	cp.Backoff.MaxDelay = MaxBackoffDelay
@@ -91,7 +91,11 @@ func Dial(hostName string, tlsConfig *tls.Config, logger log.Logger) (*grpc.Clie
 }
 
 func errorInterceptor(
-	ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker,
+	ctx context.Context,
+	method string,
+	req, reply interface{},
+	cc *grpc.ClientConn,
+	invoker grpc.UnaryInvoker,
 	opts ...grpc.CallOption,
 ) error {
 	err := invoker(ctx, method, req, reply, cc, opts...)
@@ -100,7 +104,11 @@ func errorInterceptor(
 }
 
 func versionHeadersInterceptor(
-	ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker,
+	ctx context.Context,
+	method string,
+	req, reply interface{},
+	cc *grpc.ClientConn,
+	invoker grpc.UnaryInvoker,
 	opts ...grpc.CallOption,
 ) error {
 	ctx = headers.PropagateVersions(ctx)
@@ -108,7 +116,10 @@ func versionHeadersInterceptor(
 }
 
 func ServiceErrorInterceptor(
-	ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler,
+	ctx context.Context,
+	req interface{},
+	_ *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler,
 ) (interface{}, error) {
 	resp, err := handler(ctx, req)
 	return resp, serviceerror.ToStatus(err).Err()
