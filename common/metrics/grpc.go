@@ -51,8 +51,8 @@ func NewClientMetricsTrailerPropagatorInterceptor(logger log.Logger) grpc.UnaryC
 		opts ...grpc.CallOption,
 	) error {
 		var md metadata.MD
-		optsNew := append(opts, grpc.Trailer(&md))
-		err := invoker(ctx, method, req, reply, cc, optsNew...)
+		optsWithTrailer := append(opts, grpc.Trailer(&md))
+		err := invoker(ctx, method, req, reply, cc, optsWithTrailer...)
 
 		metricUpdates := md.Get(metricsContextMd.trailerID)
 		if metricUpdates == nil {
