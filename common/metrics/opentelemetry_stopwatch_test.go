@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -54,48 +55,45 @@ func (s *otStopwatchSuite) SetupTest() {
 func (s *otStopwatchSuite) TearDownTest() {}
 
 func (s *otStopwatchSuite) TestStopwatchReportsExpectedValue() {
-	mockTime := NewMocktimeProvider(s.controller)
 	now := time.Now()
+	mockClock := clockwork.NewFakeClockAt(now)
 	duration := time.Duration(1234)
-	mockTime.EXPECT().Now().Return(now)
-	mockTime.EXPECT().Since(now).Return(duration)
 	mockMetric := NewMockopenTelemetryStopwatchMetric(s.controller)
 	metricsMeta := []openTelemetryStopwatchMetric{mockMetric}
 	mockMetric.EXPECT().Record(gomock.Any(), duration)
-	testObject := newOpenTelemetryStopwatchCustomTimer(metricsMeta, mockTime)
+	testObject := newOpenTelemetryStopwatchCustomTimer(metricsMeta, mockClock)
+	mockClock.Advance(duration)
 	testObject.Stop()
 	s.Assert()
 }
 
 func (s *otStopwatchSuite) TestStopwatchReportsToAllTimers() {
-	mockTime := NewMocktimeProvider(s.controller)
 	now := time.Now()
+	mockClock := clockwork.NewFakeClockAt(now)
 	duration := time.Duration(1234)
-	mockTime.EXPECT().Now().Return(now)
-	mockTime.EXPECT().Since(now).Return(duration)
 	mockMetric := NewMockopenTelemetryStopwatchMetric(s.controller)
 	mockMetric1 := NewMockopenTelemetryStopwatchMetric(s.controller)
 	metricsMeta := []openTelemetryStopwatchMetric{mockMetric, mockMetric1}
 	mockMetric.EXPECT().Record(gomock.Any(), duration)
 	mockMetric1.EXPECT().Record(gomock.Any(), duration)
-	testObject := newOpenTelemetryStopwatchCustomTimer(metricsMeta, mockTime)
+	testObject := newOpenTelemetryStopwatchCustomTimer(metricsMeta, mockClock)
+	mockClock.Advance(duration)
 	testObject.Stop()
 	s.Assert()
 }
 
 func (s *otStopwatchSuite) TestStopwatchSubstractsDurationCorectly() {
-	mockTime := NewMocktimeProvider(s.controller)
 	now := time.Now()
+	mockClock := clockwork.NewFakeClockAt(now)
 	duration := time.Duration(1234)
 	expectedDuration := time.Duration(1000)
-	mockTime.EXPECT().Now().Return(now)
-	mockTime.EXPECT().Since(now).Return(duration)
 	mockMetric := NewMockopenTelemetryStopwatchMetric(s.controller)
 	mockMetric1 := NewMockopenTelemetryStopwatchMetric(s.controller)
 	metricsMeta := []openTelemetryStopwatchMetric{mockMetric, mockMetric1}
 	mockMetric.EXPECT().Record(gomock.Any(), expectedDuration)
 	mockMetric1.EXPECT().Record(gomock.Any(), expectedDuration)
-	testObject := newOpenTelemetryStopwatchCustomTimer(metricsMeta, mockTime)
+	testObject := newOpenTelemetryStopwatchCustomTimer(metricsMeta, mockClock)
+	mockClock.Advance(duration)
 	testObject.Substract(time.Duration(34))
 	testObject.Substract(time.Duration(200))
 	testObject.Stop()

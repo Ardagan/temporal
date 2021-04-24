@@ -35,11 +35,13 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-type metricsContextKey struct{}
+type baggageContextKey struct{}
 
 var (
+	// "-bin" suffix is a reserved in gRPC that signals that metadata string value is actually a byte data
+	// If trailer key has such a suffix, value will be base64 encoded.
 	baggageTrailerKey = "metrics-baggage-bin"
-	metricsCtxKey     = metricsContextKey{}
+	baggageCtxKey     = baggageContextKey{}
 )
 
 // NewServerMetricsContextInjectorInterceptor returns grpc server interceptor that wraps golang context into golang
@@ -67,21 +69,21 @@ func NewClientMetricsTrailerPropagatorInterceptor(logger log.Logger) grpc.UnaryC
 		optsWithTrailer := append(opts, grpc.Trailer(&trailer))
 		err := invoker(ctx, method, req, reply, cc, optsWithTrailer...)
 
-		metricsBaggageStrings := trailer.Get(baggageTrailerKey)
-		if metricsBaggageStrings == nil {
+		baggageStrings := trailer.Get(baggageTrailerKey)
+		if len(baggageStrings) == 0 {
 			return err
 		}
 
-		for _, str := range metricsBaggageStrings {
-			data := []byte(str)
+		for _, baggageString := range baggageStrings {
+			baggageBytes := []byte(baggageString)
 			metricsBaggage := &metricspb.Baggage{}
-			unmarshalErr := metricsBaggage.Unmarshal(data)
+			unmarshalErr := metricsBaggage.Unmarshal(baggageBytes)
 			if unmarshalErr != nil {
 				logger.Error("unable to unmarshal metrics baggage from trailer", tag.Error(unmarshalErr))
 				continue
 			}
-			for key, value := range metricsBaggage.CountersInt {
-				ContextCounterAdd(ctx, logger, key, value)
+			for counterName, counterValue := range metricsBaggage.CountersInt {
+				ContextCounterAdd(ctx, logger, counterName, counterValue)
 			}
 		}
 
@@ -123,22 +125,17 @@ func NewServerMetricsTrailerPropagatorInterceptor(logger log.Logger) grpc.UnaryS
 
 // GetMetricsBaggageFromContext extracts propagation context from go context.
 func GetMetricsBaggageFromContext(ctx context.Context) *metricspb.Baggage {
-	metricValues := ctx.Value(metricsCtxKey)
-	if metricValues == nil {
+	metricsBaggage := ctx.Value(baggageCtxKey)
+	if metricsBaggage == nil {
 		return nil
 	}
 
-	metricValuesCtx, ok := metricValues.(*metricspb.Baggage)
-	if !ok {
-		return nil
-	}
-	return metricValuesCtx
-
+	return metricsBaggage.(*metricspb.Baggage)
 }
 
 func AddMetricsBaggageToContext(ctx context.Context) context.Context {
 	metricsBaggage := &metricspb.Baggage{CountersInt: make(map[string]int64)}
-	return context.WithValue(ctx, metricsCtxKey, metricsBaggage)
+	return context.WithValue(ctx, baggageCtxKey, metricsBaggage)
 }
 
 // ContextCounterAdd adds value to counter within propagation context.

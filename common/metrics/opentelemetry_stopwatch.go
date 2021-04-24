@@ -32,22 +32,17 @@ import (
 
 	"go.opentelemetry.io/otel/label"
 	"go.opentelemetry.io/otel/metric"
+
+	"go.temporal.io/server/common/clock"
 )
 
 type (
 	opentelemetryStopwatch struct {
-		timeP       timeProvider
+		timeP       clock.TimeSource
 		start       time.Time
 		toSubstract time.Duration
 		metrics     []openTelemetryStopwatchMetric
 	}
-
-	timeProvider interface {
-		Now() time.Time
-		Since(time.Time) time.Duration
-	}
-
-	timeProviderImpl struct{}
 
 	openTelemetryStopwatchMetric interface {
 		Record(ctx context.Context, value time.Duration)
@@ -70,18 +65,18 @@ func newOpenTelemetryStopwatchMetric(
 }
 
 func newOpenTelemetryStopwatchCustomTimer(
-	metricsMeta []openTelemetryStopwatchMetric, timeP timeProvider,
+	metricsMeta []openTelemetryStopwatchMetric, timeP clock.TimeSource,
 ) *opentelemetryStopwatch {
 	return &opentelemetryStopwatch{timeP, timeP.Now(), 0, metricsMeta}
 }
 
 func newOpenTelemetryStopwatch(metricsMeta []openTelemetryStopwatchMetric) *opentelemetryStopwatch {
-	return newOpenTelemetryStopwatchCustomTimer(metricsMeta, newTimeProvider())
+	return newOpenTelemetryStopwatchCustomTimer(metricsMeta, clock.NewRealTimeSource())
 }
 
 func (o *opentelemetryStopwatch) Stop() {
 	ctx := context.Background()
-	d := o.timeP.Since(o.start)
+	d := o.timeP.Now().Sub(o.start)
 	d -= o.toSubstract
 
 	for _, m := range o.metrics {
@@ -97,14 +92,3 @@ func (om *openTelemetryStopwatchMetricImpl) Record(ctx context.Context, d time.D
 	om.timer.Record(ctx, float64(d.Nanoseconds()), om.labels...)
 }
 
-func newTimeProvider() timeProvider {
-	return timeProviderImpl{}
-}
-
-func (s timeProviderImpl) Now() time.Time {
-	return time.Now().UTC()
-}
-
-func (s timeProviderImpl) Since(start time.Time) time.Duration {
-	return time.Since(start)
-}

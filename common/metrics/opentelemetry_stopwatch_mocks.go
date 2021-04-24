@@ -36,57 +36,6 @@ import (
 	gomock "github.com/golang/mock/gomock"
 )
 
-// MocktimeProvider is a mock of timeProvider interface.
-type MocktimeProvider struct {
-	ctrl     *gomock.Controller
-	recorder *MocktimeProviderMockRecorder
-}
-
-// MocktimeProviderMockRecorder is the mock recorder for MocktimeProvider.
-type MocktimeProviderMockRecorder struct {
-	mock *MocktimeProvider
-}
-
-// NewMocktimeProvider creates a new mock instance.
-func NewMocktimeProvider(ctrl *gomock.Controller) *MocktimeProvider {
-	mock := &MocktimeProvider{ctrl: ctrl}
-	mock.recorder = &MocktimeProviderMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MocktimeProvider) EXPECT() *MocktimeProviderMockRecorder {
-	return m.recorder
-}
-
-// Now mocks base method.
-func (m *MocktimeProvider) Now() time.Time {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Now")
-	ret0, _ := ret[0].(time.Time)
-	return ret0
-}
-
-// Now indicates an expected call of Now.
-func (mr *MocktimeProviderMockRecorder) Now() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Now", reflect.TypeOf((*MocktimeProvider)(nil).Now))
-}
-
-// Since mocks base method.
-func (m *MocktimeProvider) Since(arg0 time.Time) time.Duration {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Since", arg0)
-	ret0, _ := ret[0].(time.Duration)
-	return ret0
-}
-
-// Since indicates an expected call of Since.
-func (mr *MocktimeProviderMockRecorder) Since(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Since", reflect.TypeOf((*MocktimeProvider)(nil).Since), arg0)
-}
-
 // MockopenTelemetryStopwatchMetric is a mock of openTelemetryStopwatchMetric interface.
 type MockopenTelemetryStopwatchMetric struct {
 	ctrl     *gomock.Controller
