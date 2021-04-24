@@ -127,7 +127,7 @@ func (s *grpcSuite) TestContextCounterAdd() {
 	metricsBaggage := GetMetricsBaggageFromContext(ctx)
 	value, ok := metricsBaggage.CountersInt[testCounterName]
 	s.True(ok)
-	s.Equal(123, value)
+	s.Equal(int64(123), value)
 }
 
 func newMockServerTransportStream() *mockServerTransportStream {
