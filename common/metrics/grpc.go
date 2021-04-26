@@ -44,8 +44,8 @@ var (
 	baggageCtxKey     = baggageContextKey{}
 )
 
-// NewServerMetricsContextInjectorInterceptor returns grpc server interceptor that wraps golang context into golang
-// metrics propagation context.
+// NewServerMetricsContextInjectorInterceptor returns grpc server interceptor that adds metrics context to golang
+// context.
 func NewServerMetricsContextInjectorInterceptor() grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
@@ -58,8 +58,8 @@ func NewServerMetricsContextInjectorInterceptor() grpc.UnaryServerInterceptor {
 	}
 }
 
-// NewClientMetricsTrailerPropagatorInterceptor returns grpc client interceptor that injects metrics propagation context
-// received in trailer into golang metrics propagation context.
+// NewClientMetricsTrailerPropagatorInterceptor returns grpc client interceptor that injects metrics received in trailer
+// into metrics context.
 func NewClientMetricsTrailerPropagatorInterceptor(logger log.Logger) grpc.UnaryClientInterceptor {
 	return func(
 		ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker,
@@ -91,8 +91,8 @@ func NewClientMetricsTrailerPropagatorInterceptor(logger log.Logger) grpc.UnaryC
 	}
 }
 
-// NewServerMetricsTrailerPropagatorInterceptor returns grpc server interceptor that injects metrics propagation context
-// into gRPC trailer.
+// NewServerMetricsTrailerPropagatorInterceptor returns grpc server interceptor that injects metrics from context into
+// gRPC trailer.
 func NewServerMetricsTrailerPropagatorInterceptor(logger log.Logger) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
@@ -123,7 +123,7 @@ func NewServerMetricsTrailerPropagatorInterceptor(logger log.Logger) grpc.UnaryS
 	}
 }
 
-// GetMetricsBaggageFromContext extracts propagation context from go context.
+// GetMetricsBaggageFromContext extracts metrics context from golang context.
 func GetMetricsBaggageFromContext(ctx context.Context) *metricspb.Baggage {
 	metricsBaggage := ctx.Value(baggageCtxKey)
 	if metricsBaggage == nil {
@@ -134,13 +134,17 @@ func GetMetricsBaggageFromContext(ctx context.Context) *metricspb.Baggage {
 }
 
 func AddMetricsBaggageToContext(ctx context.Context) context.Context {
-	metricsBaggage := &metricspb.Baggage{CountersInt: make(map[string]int64)}
+	metricsBaggage := &metricspb.Baggage{}
 	return context.WithValue(ctx, baggageCtxKey, metricsBaggage)
 }
 
-// ContextCounterAdd adds value to counter within propagation context.
+// ContextCounterAdd adds value to counter within metrics context.
 func ContextCounterAdd(ctx context.Context, logger log.Logger, name string, value int64) {
 	metricsBaggage := GetMetricsBaggageFromContext(ctx)
+
+	if metricsBaggage.CountersInt == nil {
+		metricsBaggage.CountersInt = make(map[string]int64)
+	}
 
 	if metricsBaggage == nil {
 		logger.Error("unable to fetch metrics baggage from context")

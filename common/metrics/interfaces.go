@@ -41,7 +41,7 @@ type (
 		// Stop records time elapsed from time of creation.
 		Stop()
 		// Substract adds value to substract from recorded duration.
-		Substract(nsec time.Duration)
+		Substract(d time.Duration)
 	}
 
 	// Client is the interface used to report metrics tally.
