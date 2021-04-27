@@ -170,7 +170,6 @@ func (s *grpcSuite) TestMetadataMetricInjection_NoMetricPresent() {
 	s.Assert()
 }
 
-
 func (s *grpcSuite) TestContextCounterAdd() {
 	logger := log.NewMockLogger(s.controller)
 	ctx := AddMetricsBaggageToContext(context.Background())
